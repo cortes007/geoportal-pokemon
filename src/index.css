@@ -1,0 +1,283 @@
+/* ----------------------------------------------------------------------------
+ * FUENTES DE TAILWIND (excluyente)
+ * ----------------------------------------------------------------------------
+ * Sin esto, la detección automática de Tailwind v4 recorre TODO el proyecto y
+ * encuentra nombres de clase dentro de la documentación de las skills de
+ * `.opencode/skills/**` (p. ej. `grid-cols-12` aparece en
+ * `ui-styling/references/tailwind-utilities.md`). Resultado medido antes del
+ * arreglo: 819 reglas / 59 kB de CSS para una app de 6 componentes, con
+ * utilidades que la aplicación nunca usa.
+ *
+ * `source(none)` desactiva la detección automática y `@source` declara las dos
+ * únicas fuentes reales. Efecto lateral deseable: instalar más skills ya no
+ * infla el bundle.
+ * -------------------------------------------------------------------------- */
+@import "tailwindcss" source(none);
+@source "../index.html";
+@source "../src";
+
+/* ============================================================================
+ * SISTEMA DE DISEÑO · Arquitectura de tokens en 3 capas
+ * ----------------------------------------------------------------------------
+ * Referencias: AGENTS.md §4 (glassmorphism, Tailwind para todo el estilizado),
+ * skill `design-system` (primitive → semantic → component) y skill `ui-styling`
+ * (Tailwind v4: `@theme` para tokens, `@utility` para patrones repetidos).
+ *
+ * CAPA 1 · PRIMITIVOS  → valores crudos. NO se consumen en componentes.
+ * CAPA 2 · SEMÁNTICOS  → significado de uso. Son los que usan los componentes.
+ * CAPA 3 · COMPONENTE  → patrones repetidos, expuestos como `@utility`.
+ *
+ * POR QUÉ: antes de este archivo la clase de tarjeta glassmorphism estaba
+ * copiada literalmente en SearchCard, ReportCard, DetailSheet y MapViewer, y
+ * los acentos de capa eran hex crudos dentro de JSX. Con la capa 3, cambiar el
+ * radio o la elevación del sistema es una sola edición.
+ *
+ * NOTA sobre AGENTS.md §4 ("no uses archivos .css externos"): este archivo NO es
+ * CSS de componentes, es la configuración de Tailwind. `@theme` y `@utility` son
+ * directivas de Tailwind v4, que es exactamente el mecanismo oficial para
+ * declarar un sistema de diseño. El estilizado de componentes sigue siendo
+ * 100% utilidades Tailwind en el JSX.
+ * ========================================================================== */
+
+@theme {
+  /* ==========================================================================
+   * CAPA 1 · PRIMITIVOS
+   * --------------------------------------------------------------------------
+   * Origen: paleta por defecto de Tailwind. Se declaran aquí de forma explícita
+   * (en lugar de depender de la emisión implícita del árbol de temas) para que
+   * la capa semántica pueda aliasarlos con `var()` sin sorpresas de purga.
+   * Prefijo `base-` para no colisionar con las utilidades integradas:
+   * `bg-sky-500` sigue existiendo y sigue siendo sky-500.
+   * ======================================================================== */
+  /* Escala de marca (azul explorador, derivada de sky). Se declaran solo los
+   * pasos que la capa semántica consume; amplíala aquí si necesitas más. */
+  --color-base-sky-50: #f0f9ff;
+  --color-base-sky-300: #7dd3fc;
+  --color-base-sky-500: #0ea5e9;
+  --color-base-sky-600: #0284c7;
+  --color-base-sky-700: #0369a1;
+
+  /* Neutros (derivados de slate). */
+  --color-base-slate-100: #f1f5f9;
+  --color-base-slate-400: #94a3b8;
+  --color-base-slate-500: #64748b;
+  --color-base-slate-600: #475569;
+  --color-base-slate-800: #1e293b;
+
+  --color-base-emerald-600: #059669;
+  --color-base-emerald-700: #047857;
+
+  --color-base-amber-50: #fffbeb;
+  --color-base-amber-200: #fde68a;
+  --color-base-amber-700: #b45309;
+
+  --color-base-rose-50: #fff1f2;
+  --color-base-rose-200: #fecdd3;
+  --color-base-rose-700: #be123c;
+
+  /* ==========================================================================
+   * CAPA 2 · SEMÁNTICOS
+   * --------------------------------------------------------------------------
+   * Los componentes consumen ESTOS, vía utilidades Tailwind generadas
+   * automáticamente: `bg-primary`, `text-ink`, `bg-glass`…
+   * ======================================================================== */
+
+  /* Acción principal */
+  --color-primary: var(--color-base-sky-600);
+  --color-primary-hover: var(--color-base-sky-700);
+  --color-primary-soft: var(--color-base-sky-50);
+  --color-primary-edge: var(--color-base-sky-300);
+  --color-primary-ink: var(--color-base-sky-700);
+
+  /* Superficie. `surface-muted` es el fondo de la app; las tarjetas flotantes
+   * usan `--color-glass`, que es el blanco translúcido de AGENTS.md §4. */
+  --color-surface-muted: var(--color-base-slate-100);
+
+  /* Texto — escalera de contraste sobre superficie clara.
+   * ink-soft es el mínimo para texto normal (WCAG 1.4.3, >=4.5:1);
+   * ink-muted solo alcanza 4.5:1 sobre blanco puro, así que se reserva para
+   * metadatos sobre el velo blanco de una tarjeta. */
+  --color-ink: var(--color-base-slate-800);
+  --color-ink-soft: var(--color-base-slate-600);
+  --color-ink-muted: var(--color-base-slate-500);
+  --color-ink-disabled: var(--color-base-slate-400);
+
+  /* Velo detrás de una superficie modal. Debe medirse contra el mapa real,
+   * no reutilizarse a ciegas (guía "Scrim and modal legibility" del skill). */
+  --color-scrim: rgb(15 23 42 / 0.28);
+
+  /* Glassmorphism (AGENTS.md §4): el alfa vive en el token, no en la clase. */
+  --color-glass: rgb(255 255 255 / 0.8);
+  --color-glass-border: rgb(226 232 240 / 0.5);
+  --color-glass-inset: rgb(255 255 255 / 0.6);
+
+  /* Anillo de foco — 3px según guía de accesibilidad del skill `ui-ux-pro-max` */
+  --color-ring: rgb(14 165 233 / 0.55);
+
+  /* Estados del sistema */
+  --color-success: var(--color-base-emerald-600);
+  --color-success-hover: var(--color-base-emerald-700);
+  --color-warning: var(--color-base-amber-700);
+  --color-warning-soft: var(--color-base-amber-50);
+  --color-warning-edge: var(--color-base-amber-200);
+  --color-danger: var(--color-base-rose-700);
+  --color-danger-soft: var(--color-base-rose-50);
+  --color-danger-edge: var(--color-base-rose-200);
+
+  /* Acentos de capa temática del visor. Antes eran hex crudos en SearchCard. */
+  --color-layer-sightings: var(--color-base-sky-500);
+  --color-layer-nests: var(--color-base-amber-700);
+  --color-layer-habitats: var(--color-base-emerald-600);
+  --color-layer-h3: var(--color-base-sky-600);
+
+  /* Escala tipográfica: se añade el paso `2xs` (11px) que el DetailSheet ya
+   * usaba como valor arbitrario `text-[11px]`. */
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1rem;
+}
+
+/* ==========================================================================
+ * CAPA 3 · COMPONENTE
+ * --------------------------------------------------------------------------
+ * `@utility` (Tailwind v4) genera una utilidad real: funciona con variantes
+ * (`sm:glass-panel`, `hover:pressable`) y se purga si no se usa.
+ * ======================================================================== */
+
+/**
+ * Tarjeta flotante glassmorphism — AGENTS.md §4.
+ * Sustituye la constante `CLASES_TARJETA` duplicada en 4 componentes.
+ */
+@utility glass-panel {
+  background-color: var(--color-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--color-glass-border);
+  box-shadow: var(--shadow-xl);
+}
+
+/** Superficie interior (filas de datos, chips) sobre un `glass-panel`. */
+@utility glass-inset {
+  background-color: var(--color-glass-inset);
+  border: 1px solid var(--color-glass-border);
+}
+
+/**
+ * Campo de formulario (input / select / textarea).
+ * Unifica 6 apariciones de la misma cadena de clases.
+ *
+ * Deliberadamente NO fija `width` ni `padding`: así cada llamada puede usar
+ * `w-full`, `w-28`, `pl-9`… sin ambigüedad de orden entre esta utilidad y las
+ * utilidades integradas de Tailwind.
+ */
+@utility field {
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-glass-border);
+  background-color: var(--color-glass-inset);
+  color: var(--color-ink);
+  outline: none;
+  transition: border-color 200ms ease, box-shadow 200ms ease;
+
+  &::placeholder {
+    color: var(--color-ink-muted);
+  }
+
+  &:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-ring);
+  }
+
+  &:disabled {
+    color: var(--color-ink-disabled);
+    cursor: not-allowed;
+  }
+}
+
+/**
+ * Foco visible 3px. Se usa `outline` (no `box-shadow`) para no colisionar con
+ * la elevación de `glass-panel`.
+ */
+@utility focus-ring {
+  &:focus-visible {
+    outline: 3px solid var(--color-ring);
+    outline-offset: 2px;
+  }
+}
+
+/**
+ * Feedback de pulsación sin desplazar el layout (guía "Stable Interaction
+ * States" del skill `ui-ux-pro-max`). Respeta `prefers-reduced-motion`.
+ */
+@utility pressable {
+  cursor: pointer;
+  transition: color 200ms ease, background-color 200ms ease, border-color 200ms ease,
+    box-shadow 200ms ease, transform 200ms ease;
+
+  &:active {
+    transform: scale(0.95);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+
+    &:active {
+      transform: none;
+    }
+  }
+}
+
+/**
+ * Anclajes que respetan las safe areas del dispositivo.
+ * Necesarios porque `viewport-fit=cover` (ver index.html) permite que el mapa
+ * llene la pantalla completa, incluida la zona del notch y la barra gestual.
+ * El lienzo del mapa DEBE ir a sangre; solo los controles flotantes se retraen.
+ */
+@utility edge-t {
+  top: max(1rem, env(safe-area-inset-top));
+}
+
+@utility edge-r {
+  right: max(1rem, env(safe-area-inset-right));
+}
+
+@utility edge-l {
+  left: max(1rem, env(safe-area-inset-left));
+}
+
+/* ==========================================================================
+ * BASE
+ * ======================================================================== */
+@layer base {
+  /*
+   * Layout base: el visor ocupa el 100% del viewport (100vw x 100vh) sin
+   * scrollbars, estilo Google Maps / Waze.
+   */
+  html,
+  body,
+  #root {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  body {
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    background-color: var(--color-surface-muted);
+    color: var(--color-ink);
+  }
+
+  /* Respeta la preferencia de movimiento del sistema para transiciones. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      transition-duration: 0.01ms !important;
+    }
+  }
+}

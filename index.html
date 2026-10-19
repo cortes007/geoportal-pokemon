@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <!--
+      Accesibilidad (WCAG 1.4.4): NO se usa `maximum-scale` ni `user-scalable=no`.
+      El pinch-to-zoom del mapa ya lo gestiona OpenLayers de forma local con
+      `.ol-viewport { touch-action: pan-x pan-y }` (ver ol.css), así que bloquear
+      el zoom a nivel de página no aportaba nada y sí impedía ampliar el texto.
+
+      `viewport-fit=cover` habilita las safe areas (env(safe-area-inset-*)) en
+      dispositivos con notch.
+    -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="color-scheme" content="light" />
+    <meta name="description" content="Geoportal de hábitats, nidos y avistamientos de Pokémon GO." />
+    <title>Geoportal Pokémon GO · Hábitats, Nidos y Avistamientos</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
