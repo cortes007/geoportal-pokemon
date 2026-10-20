@@ -29,6 +29,10 @@ export function useAvistamientos() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [ultimaActualizacion, setUltimaActualizacion] = useState(null);
+  // Distingue "aún no ha respondido nadie" de "respondió y no hay datos".
+  // Sin esto, el estado vacío aparecería durante el primer render (loading
+  // arranca en false) y parpadearía antes de la primera consulta.
+  const [inicializado, setInicializado] = useState(false);
 
   const aplicarRegistro = useCallback((registro) => {
     if (!registro?.id) return;
@@ -40,6 +44,7 @@ export function useAvistamientos() {
   const fetchAvistamientos = useCallback(async (parametros = {}) => {
     if (!isSupabaseConfigured) {
       setError(MENSAJE_SIN_CONFIGURAR);
+      setInicializado(true);
       return [];
     }
 
@@ -66,6 +71,7 @@ export function useAvistamientos() {
       return [];
     } finally {
       setLoading(false);
+      setInicializado(true);
     }
   }, []);
 
@@ -136,9 +142,19 @@ export function useAvistamientos() {
       loading,
       error,
       ultimaActualizacion,
+      configurado: isSupabaseConfigured,
+      inicializado,
       fetchAvistamientos,
       crearAvistamiento,
     }),
-    [avistamientos, loading, error, ultimaActualizacion, fetchAvistamientos, crearAvistamiento],
+    [
+      avistamientos,
+      loading,
+      error,
+      ultimaActualizacion,
+      inicializado,
+      fetchAvistamientos,
+      crearAvistamiento,
+    ],
   );
 }

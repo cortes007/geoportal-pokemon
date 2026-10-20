@@ -8,6 +8,7 @@ import { CAPA_BASE_POR_DEFECTO, CAPAS_BASE, MAP_CONFIG } from '../config/mapConf
 import { useMapContext } from '../context/MapContext';
 import { createAvistamientoStyle, createH3Style, createHabitatStyle } from '../utils/mapStyles';
 import { reprojectCoordinates, CRS } from '../utils/spatialUtils';
+import { PREFIERE_MENOS_MOVIMIENTO, useMediaQuery } from './useMediaQuery';
 
 /**
  * useOpenMap.js
@@ -25,6 +26,7 @@ import { reprojectCoordinates, CRS } from '../utils/spatialUtils';
  */
 
 const HIT_TOLERANCE = 8;
+const DURACION_VUELO_MS = 600;
 
 export function useOpenMap(targetRef, { onSelect, onMapClick } = {}) {
   const { setMap } = useMapContext();
@@ -37,11 +39,22 @@ export function useOpenMap(targetRef, { onSelect, onMapClick } = {}) {
   const onSelectRef = useRef(onSelect);
   const onMapClickRef = useRef(onMapClick);
 
+  // WCAG 2.3.3: la cámara no debe animarse si el sistema pide menos movimiento.
+  // El valor se refleja en un ref para que `flyTo` no cambie de identidad al
+  // alternar la preferencia (si lo hiciera, el efecto de MapViewer repetiría
+  // el vuelo a la ubicación del usuario).
+  const movimientoReducido = useMediaQuery(PREFIERE_MENOS_MOVIMIENTO);
+  const movimientoReducidoRef = useRef(movimientoReducido);
+
   // Refs siempre actualizadas: evita re-crear el mapa si cambian los callbacks.
   useEffect(() => {
     onSelectRef.current = onSelect;
     onMapClickRef.current = onMapClick;
   }, [onSelect, onMapClick]);
+
+  useEffect(() => {
+    movimientoReducidoRef.current = movimientoReducido;
+  }, [movimientoReducido]);
 
   // --- Inicialización (una vez por montaje del contenedor) ---
   useEffect(() => {
@@ -161,7 +174,18 @@ export function useOpenMap(targetRef, { onSelect, onMapClick } = {}) {
       if (!map || !Number.isFinite(latitud) || !Number.isFinite(longitud)) return;
 
       const destino = reprojectCoordinates([longitud, latitud], CRS.WGS84, CRS.WEB_MERCATOR);
-      map.getView().animate({ center: destino, zoom, duration: 600 });
+      const vista = map.getView();
+
+      // Salto instantáneo: `animate` con duración 0 sigue programando un frame,
+      // así que se aplican centro y zoom directamente.
+      if (movimientoReducidoRef.current) {
+        vista.cancelAnimations();
+        vista.setCenter(destino);
+        vista.setZoom(zoom);
+        return;
+      }
+
+      vista.animate({ center: destino, zoom, duration: DURACION_VUELO_MS });
     },
     [map],
   );

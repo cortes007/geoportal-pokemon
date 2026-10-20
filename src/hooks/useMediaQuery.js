@@ -37,3 +37,9 @@ export function useMediaQuery(query) {
  * aquí como constante única para no dispersar el valor.
  */
 export const BREAKPOINT_SM = '(min-width: 640px)';
+
+/**
+ * Preferencia del sistema de reducir movimiento (WCAG 2.3.3). La consumen los
+ * efectos que mueven contenido por sí solos, como el vuelo de la cámara.
+ */
+export const PREFIERE_MENOS_MOVIMIENTO = '(prefers-reduced-motion: reduce)';

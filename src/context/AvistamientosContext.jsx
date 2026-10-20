@@ -35,6 +35,8 @@ export function AvistamientosProvider({ children }) {
     loading,
     error,
     ultimaActualizacion,
+    configurado,
+    inicializado,
     fetchAvistamientos,
     crearAvistamiento,
   } = useAvistamientos();
@@ -83,6 +85,20 @@ export function AvistamientosProvider({ children }) {
 
   const toggleCapa = useCallback((nombreCapa) => {
     setCapas((prev) => ({ ...prev, [nombreCapa]: !prev[nombreCapa] }));
+  }, []);
+
+  /**
+   * Restablece las entradas que alimentan `avistamientosVisibles`: búsqueda,
+   * tipo y visibilidad de avistamientos/nidos. Es una acción de dominio (no la
+   * UI mutando filtros) y da salida al estado de "cero resultados".
+   */
+  const mostrarTodosLosAvistamientos = useCallback(() => {
+    setFilters({ ...FILTROS_INICIALES });
+    setCapas((prev) => ({
+      ...prev,
+      [CAPAS.AVISTAMIENTOS]: true,
+      [CAPAS.NIDOS]: true,
+    }));
   }, []);
 
   const selectAvistamiento = useCallback((id) => setSelectedId(id), []);
@@ -141,6 +157,8 @@ export function AvistamientosProvider({ children }) {
       habitatsLoading,
       habitatsError,
       ultimaActualizacion,
+      configurado,
+      inicializado,
       conteos,
       filtrosActivos,
       // Filtros y capas
@@ -151,6 +169,7 @@ export function AvistamientosProvider({ children }) {
       setQuery,
       setTipo,
       toggleCapa,
+      mostrarTodosLosAvistamientos,
       setCapaBase,
       setH3Resolucion,
       // Selección
@@ -177,6 +196,8 @@ export function AvistamientosProvider({ children }) {
       habitatsLoading,
       habitatsError,
       ultimaActualizacion,
+      configurado,
+      inicializado,
       conteos,
       filtrosActivos,
       filters,
@@ -186,6 +207,7 @@ export function AvistamientosProvider({ children }) {
       setQuery,
       setTipo,
       toggleCapa,
+      mostrarTodosLosAvistamientos,
       setH3Resolucion,
       selectedId,
       selectedAvistamiento,

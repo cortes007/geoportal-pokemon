@@ -9,6 +9,8 @@ import { useH3DensityLayer } from '../../hooks/useH3DensityLayer';
 import { useHabitatsLayer } from '../../hooks/useHabitatsLayer';
 import { useOpenMap } from '../../hooks/useOpenMap';
 import { useUserLocation } from '../../hooks/useUserLocation';
+import AttributionPill from './AttributionPill';
+import MapEmptyState from './MapEmptyState';
 
 /**
  * MapViewer.jsx
@@ -26,6 +28,7 @@ export default function MapViewer() {
   const containerRef = useRef(null);
 
   const {
+    avistamientos,
     avistamientosVisibles,
     habitatsGeoJSON,
     selectedId,
@@ -35,10 +38,15 @@ export default function MapViewer() {
     modoReporte,
     loading,
     error,
+    configurado,
+    inicializado,
     selectAvistamiento,
     clearSelection,
     setCoordenadaReporte,
     cancelarReporte,
+    iniciarReporte,
+    mostrarTodosLosAvistamientos,
+    refrescar,
   } = useAvistamientosContext();
 
   const { setUserLocation } = useMapContext();
@@ -100,6 +108,34 @@ export default function MapViewer() {
     flyTo(position.latitud, position.longitud, MAP_CONFIG.zoomUbicacion);
   }, [position, setUserLocation, flyTo]);
 
+  // --- Estado vacío del visor: sin configurar / error / cero resultados -----
+  // `inicializado` evita el falso "cero resultados" del primer render, ya que
+  // `loading` arranca en false. El indicador de carga (hallazgo E) se pospone
+  // a la Fase 6, pero el estado vacío no debe mentir mientras tanto.
+  const sinConfigurar = !configurado;
+  const errorSinDatos = Boolean(error) && !sinConfigurar && avistamientos.length === 0;
+  const ceroResultados =
+    inicializado &&
+    !loading &&
+    !error &&
+    !sinConfigurar &&
+    !modoReporte &&
+    avistamientosVisibles.length === 0;
+
+  let estadoVacio = null;
+  if (sinConfigurar) {
+    estadoVacio = { tipo: 'sin-configurar' };
+  } else if (errorSinDatos) {
+    estadoVacio = { tipo: 'error', mensaje: error, onAccion: refrescar };
+  } else if (ceroResultados) {
+    const filtrado = avistamientos.length > 0;
+    estadoVacio = {
+      tipo: 'vacio',
+      filtrado,
+      onAccion: filtrado ? mostrarTodosLosAvistamientos : iniciarReporte,
+    };
+  }
+
   return (
     <div className="relative h-full w-full">
       {/* Contenedor donde OpenLayers inyecta el viewport del mapa. */}
@@ -109,6 +145,13 @@ export default function MapViewer() {
         role="application"
         aria-label="Mapa de hábitats, nidos y avistamientos de Pokémon GO"
       />
+
+      {/* Atribución legal de la capa base activa. Vive en el DOM (no como
+          control de OpenLayers) para no tocar el ciclo de vida del mapa. */}
+      <AttributionPill capaBase={capaBase} />
+
+      {/* Estado vacío: explica por qué el mapa no muestra datos. */}
+      {estadoVacio && <MapEmptyState {...estadoVacio} />}
 
       {/* Pila de controles superior derecha: botón de ubicación + su aviso de
           error. Se agrupan en una columna para que el aviso fluya debajo del
@@ -163,7 +206,9 @@ export default function MapViewer() {
         </div>
       )}
 
-      {error && (
+      {/* Aviso de error de refresco: solo cuando ya hay datos en pantalla.
+          Sin datos, el error lo comunica `MapEmptyState`. */}
+      {error && !sinConfigurar && !errorSinDatos && (
         <div
           role="alert"
           className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex justify-center pb-[max(1rem,env(safe-area-inset-bottom))]"
