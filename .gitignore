@@ -1,7 +1,41 @@
+# --- Node / build ---
 node_modules
 dist
 dist-ssr
+coverage
+.vite/
+*.tsbuildinfo
+*.log
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# --- Variables de entorno: .env contiene la service_role, nunca se versiona ---
 .env
 .env.local
+.env.example
 *.local
+
+# --- Herramientas de terceros del agente: no son parte del producto ---
+.opencode/
+.agents/
+skills-lock.json
+
+# --- Cachés locales (respuestas de terceros, no se versionan) ---
+scripts/.overpass-cache/
+supabase/.temp/
+supabase/.branches/
+
+# --- Basura del sistema operativo y del editor ---
 .DS_Store
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# --- Python (no se usa en el proyecto, pero evita ruido si algo lo invoca) ---
+__pycache__/
+*.pyc

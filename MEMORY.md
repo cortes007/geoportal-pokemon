@@ -8,11 +8,15 @@
 > descubrir una restricción del entorno. `AGENTS.md` manda sobre este archivo: si hay
 > conflicto, gana `AGENTS.md`.
 >
-> Última actualización: **Fase 4 cerrada y verificada**; endurecimiento `0009` aplicado y probado.
-> **Fase 5 no iniciada.** `0001`–`0009` aplicadas: `0008` está verificada (el seed corrió después),
-> `0009` es histórica (no editar) y el Advisor queda en 3 advertencias aceptadas. El seed dejó
-> 1025 Pokémon en `pokemon_catalogo`. La próxima migración libre es `0010` y es de la Fase 5. Fase 3
-> (A, B y C) completada; D, E, F y G pospuestos a la Fase 6.
+> Última actualización: **Fase 5A escrita, pendiente de aplicar y verificar**.
+> `0001`–`0009` aplicadas; `0010` escrita pero **no aplicada**. `0008` verificada (el seed corrió
+> después), `0009` histórica (no editar) y el Advisor queda en 3 advertencias aceptadas. El seed
+> dejó 1025 Pokémon. La próxima migración libre es **`0011` (Fase 5B)**, que no se inicia hasta
+> aprobar 5A. Fase 3 (A, B y C) completada; D, E, F y G pospuestos a la Fase 6.
+>
+> **Limpieza de repo (2026-10-20).** `.gitignore` se amplió y ahora ignora por tipo. El
+> repositorio ya tiene 2 commits. `.opencode/` y `skills-lock.json` siguen versionados y hay que
+> destrackearlos (§7.3, §14).
 
 ---
 
@@ -28,7 +32,7 @@
 | Datos | Supabase (`@supabase/supabase-js`). Modelo nuevo en `supabase/migrations/` (`reportes`, `confirmaciones`, `pokemon_catalogo`…). Transición: `avistamientos` + RPC `listar_avistamientos_recientes` siguen vivos. |
 | Iconos | `lucide-react` |
 | Acentos | `lucide-react`, `h3-js`, `proj4` |
-| Repositorio | **0 commits.** Todo está sin trackear (`??`). Ver §8, es una trampa. |
+| Repositorio | 2 commits en `main` (`8f84bc0` base, `7b22b9b` Fase 4). `.opencode/` y `skills-lock.json` **siguen versionados** pese a estar ya en `.gitignore`: hay que destrackearlos (§7.3). |
 
 CRS: web y GeoJSON en `EPSG:4326` (WGS84); el mapa renderiza en `EPSG:3857` (Web Mercator)
 y la reproyección ocurre en `src/utils/spatialUtils.js`.
@@ -137,8 +141,9 @@ src/
 
 `★` = creado en las Fases 1 a 3.
 
-Fuera de `src/`: `supabase/migrations/0001–0007` (modelo `reportes`), `supabase/README.md` y
-`scripts/seed-catalogo.mjs` (catálogo desde PokeAPI, Fase 4).
+Fuera de `src/`: `supabase/migrations/0001–0010` (modelo `reportes` y Fase 5A), `supabase/tests/`,
+`supabase/README.md`, `scripts/seed-catalogo.mjs` (catálogo desde PokeAPI, Fase 4) y `scripts/lib/*`
+(env, Supabase admin, H3, Overpass, geometría y terrenos, Fase 5A).
 
 **Invariante de SRP del proyecto (`AGENTS.md` §2):** si un componente necesita gestionar el
 ciclo de vida de algo (suscripción, listener, timer), eso va en `/hooks`, no en el componente.
@@ -234,6 +239,19 @@ vacío no puede mentir mientras tanto.
 (restablece búsqueda y tipo, y reactiva las capas de avistamientos y nidos). Con esto la UI sigue
 sin conocer el dominio y el único lugar que escribe filtros sigue siendo `AvistamientosContext`.
 
+**16. `.gitignore` por tipo, y las skills fuera del repo.**
+Las skills son herramientas del agente, no producto: 311 archivos de terceros (196 `.md`, 53
+`.csv`, 35 `.py`) no deben viajar con el código ni aparecer en `git status`. Se ignoró por **tipo**
+(Node/build, entorno, SO/editor, cachés) en vez de con cuatro rutas sueltas, porque la lista de
+basura que se acumula no se conoce de antemano: `.idea/`, `Thumbs.db` o un `*.log` habrían vuelto
+a ensuciar el repo en la siguiente fase. `.agents/` se incluyó porque `npx skills add` lo recrea
+(§7.2) y habría vuelto a meter cientos de archivos sin trackear. Tres exclusiones deliberadas:
+`*.csv` **no** se ignora (la Fase 5 y los catálogos pueden necesitarlo versionado),
+`supabase/config.toml` **no** se ignora (es configuración del proyecto; solo `.temp/` y
+`.branches/` son estado local) y `.vscode/` sí se ignora por defecto, reversible con una excepción
+si algún día se quiere compartir ajustes. `.env` nunca estuvo en el historial (`git log --all --
+.env` vacío): la `service_role` no se filtró.
+
 ---
 
 ## 5. Resultados medidos
@@ -311,20 +329,41 @@ Esto también significa que instalar más skills ya **no** infla el bundle.
 
 ### 7.2 `npx skills add` recrea `.agents/`
 El CLI `skills` tiene `.agents/skills/` hardcodeado como destino para OpenCode. Todo se
-consolidó en `.opencode/skills/` (48 skills) y se borró `.agents/`, pero **la próxima vez que
+consolidó en `.opencode/skills/` (12 skills) y se borró `.agents/`, pero **la próxima vez que
 ejecutes `npx skills add` el directorio volverá**. Hay que repetir el movimiento.
 
-### 7.3 El repositorio tiene 0 commits y `.opencode/` no está ignorado
-`git rev-list --count HEAD` falla: no hay ni un commit. Y `.gitignore` cubre
-`node_modules`, `dist`, `dist-ssr`, `.env`, `.env.local`, `*.local`, `.DS_Store` — pero
-**no `.opencode/`**. Un `git add -A` commitearía **~485 archivos** de contenido de terceros.
+`.agents/` ya está en `.gitignore` (limpieza 2026-10-20), así que no volverá a ensuciar
+`git status` — pero **sigue haciendo falta mover el contenido** para que OpenCode las cargue.
 
-Líneas recomendadas (no ejecutadas, `AGENTS.md` §6 prohíbe tocar git):
+### 7.3 `.gitignore` y `.opencode/`: estado real (limpieza 2026-10-20)
+`.gitignore` se amplió y ahora ignora por **tipo**, no por ruta puntual: Node/build, variables de
+entorno, herramientas del agente, cachés locales, basura de SO/editor y Python. El archivo es la
+fuente de verdad; no lo resumas aquí.
 
-```gitignore
-.opencode/
-skills-lock.json
+Lo importante: **`.gitignore` no destrackea**. `.opencode/` (311 archivos) y `skills-lock.json`
+siguen versionados desde `8f84bc0`/`7b22b9b`. Hasta que se ejecute lo siguiente, cualquier cambio
+en una skill entraría en el próximo commit:
+
+```bash
+git rm -r --cached .opencode
+git rm --cached skills-lock.json
+git commit -m "chore: destrackear herramientas de terceros y ampliar .gitignore"
 ```
+
+`--cached` deja los archivos en disco: las skills siguen funcionando localmente. El historial
+**no** se limpia — los 311 archivos siguen en los commits viejos. Se aceptó porque son contenido
+público de terceros sin secretos y reescribir historia obligaría a force-push.
+
+Dos comandos que hay que usar **siempre** al tocar reglas de `.gitignore`:
+
+```bash
+git ls-files -i -c --exclude-standard   # archivos ya versionados que quedarían ignorados
+git check-ignore -v --no-index <ruta>   # comprueba que una regla concreta coincide
+```
+
+`git ls-files -i -c` debe listar **solo** `.opencode/**` y `skills-lock.json`. Si aparece algo de
+`src/`, `scripts/` o `supabase/`, la regla quedó demasiado ancha. `check-ignore` no reporta rutas
+con `/` final si se pasan sin la barra: hay que escribir `.vite/`, no `.vite`.
 
 ### 7.4 Sesgo de la paleta: qué color usar
 `text-ink-muted` (#64748b) da 4.76:1 sobre **blanco puro** pero solo 4.34:1 sobre `slate-100`.
@@ -393,22 +432,29 @@ barata: fila de chips con el patrón `ToggleCapa`).
 
 ## 10. Inventario de skills instaladas
 
-48 skills en `.opencode/skills/`. **Están todas cargadas y muchas no aplican.**
+12 skills en `.opencode/skills/` (311 archivos). **Ya no están versionadas** (§7.3): son
+herramientas locales del agente, no parte del producto.
 
-| Grupo | Cuántas | ¿Aplica a este repo? |
-|---|---|---|
-| `apple-design` | 1 | Sí — auditoría de UI/UX, glassmorphism, HIG |
-| `ui-ux-pro-max` + `design` + `design-system` + `ui-styling` + `banner-design` + `brand` + `slides` | 7 | **Parcial.** `ui-ux-pro-max`, `design-system` y `ui-styling` son la base del trabajo de §2. `banner-design`, `brand` y `slides` no tienen uso aquí. |
-| Mapbox (`mapbox-*`) | 20 | **No.** El proyecto usa OpenLayers. |
-| MapLibre (`maplibre-*`) | 11 | **No.** Mismo motivo. |
-| Strix (`*security*`, `*pentest*`, `owasp-*`) | 9 | **No.** Orientadas a una plataforma de pentesting con Docker y claves de LLM, contra una app cliente estática. |
+| Skill | ¿Aplica a este repo? |
+|---|---|
+| `apple-design` | Sí — auditoría de UI/UX, glassmorphism, HIG |
+| `ui-ux-pro-max` | Sí — fuente de §2 (guías UX, paletas, pairing tipográfico) |
+| `design-system` | Sí — arquitectura de tokens de §2 |
+| `ui-styling` | Sí — shadcn/Tailwind, base de §2 |
+| `design` | Parcial — logo/CIP/banners; solo si se pide identidad visual |
+| `banner-design` | No — no hay piezas de marketing |
+| `brand` | No |
+| `slides` | No |
+| `api-security-testing` | No — no hay API propia; el backend es Supabase |
+| `application-security-testing` | No |
+| `ci-security-scanning-with-strix` | No |
+| `web-app-penetration-testing` | No |
 
-**Riesgo real:** las descripciones se usan para decidir qué skill cargar por coincidencia de
-palabras. Frases como *"styling a map"*, *"markers"* o *"GeoJSON vs tiles"* harán que el agente
-cargue una skill de Mapbox/MapLibre durante trabajo de **OpenLayers**, y entonces aconseje
-`map.addLayer({type:'symbol'})`, `addImage` o `setFeatureState` — APIs que aquí no existen.
-Recomendación (**pendiente antes de la Fase 6**): conservar `apple-design`, `ui-ux-pro-max`,
-`design-system` y `ui-styling`, y podar el resto.
+**Riesgo real y vigente:** las descripciones se usan para decidir qué skill cargar por
+coincidencia de palabras. Las cuatro de seguridad hablan de *"web app"*, *"API"* y *"pentest"*,
+así que pueden activarse durante trabajo normal. **Ya no hay skills de Mapbox ni de MapLibre**
+instaladas, así que el riesgo de que el agente aconseje `map.addLayer({type:'symbol'})` sobre
+OpenLayers desapareció.
 
 ---
 
@@ -419,6 +465,10 @@ npm run dev             # Vite en :5173
 npm run build           # build de producción
 npm run preview
 npm run seed:catalogo   # llena pokemon_catalogo desde PokeAPI (Fase 4)
+npm run seed:afinidad -- --dry-run       # 126 pares; --json para verlos
+npm run datos:terrenos -- --dry-run      # bbox completo, sin Overpass/Supabase
+npm run datos:celdas -- --dry-run        # 16 640 celdas y 378 tiles
+npm run test:scripts                     # pruebas Node de scripts/lib
 ```
 
 Migraciones (las aplica el usuario, nunca el agente):
@@ -427,7 +477,8 @@ Migraciones (las aplica el usuario, nunca el agente):
 supabase db push        # aplica supabase/migrations/ en orden
 ```
 
-No interactuar con git (`AGENTS.md` §6): solo recomendar comandos, no ejecutarlos.
+No interactuar con git (`AGENTS.md` §6): solo recomendar comandos, no ejecutarlos. Las dos
+verificaciones obligatorias al tocar `.gitignore` están en §7.3.
 
 Comprobación rápida de que los tokens siguen generándose tras editar `index.css`:
 
@@ -455,7 +506,7 @@ usuario. Plan aprobado antes de escribir; decisiones y porqué a continuación.
 
 - **Aplicadas y verificadas por el usuario**: `0001` a `0009`, en orden. Sin errores reportados.
 - Esas nueve migraciones son **históricas**: no editarlas. Cualquier cambio futuro del esquema va
-  en `0010+` (la próxima migración libre es `0010`, ya de la Fase 5; Supabase registra el
+  en `0011+` (la próxima migración libre es `0011`, ya de la Fase 5B; Supabase registra el
   historial y no reejecuta archivos ya aplicados).
 - **`0008_service_role_pokemon_catalogo.sql` aplicada y verificada.** Concede
   `SELECT/INSERT/UPDATE/DELETE` sobre `pokemon_catalogo` a `service_role` y fija los privilegios
@@ -591,7 +642,7 @@ Plan aprobado antes de escribir. `0009_endurecimiento_seguridad.sql` no edita `0
 `0009` está aplicada en Supabase y es **histórica**: no se edita. El Advisor quedó en **3
 advertencias aceptadas**: `listar_avistamientos_recientes` para `anon`, la misma para
 `authenticated` y la política temporal `avistamientos insercion` (se cierra en la Fase 7). Cualquier
-cambio de esquema va en una migración futura; la próxima libre es `0010`, ya de la Fase 5.
+cambio de esquema va en una migración futura; la próxima libre es `0011`, ya de la Fase 5B.
 
 **Verificado por el usuario (2026-10-20):**
 
@@ -676,7 +727,7 @@ función.
 
 ### Decisión: la corrección es por patrón; no hay migración de privilegios
 
-`0010` es la próxima migración libre y pertenece a la Fase 5, no a esta corrección. No se crea una
+`0011` es la próxima migración libre y pertenece a la Fase 5B, no a esta corrección. No se crea una
 migración vacía solo para documentar la regla. La corrección es doble:
 
 1. **Patrón explícito en cada migración que cree una función** (la red de seguridad real):
@@ -854,14 +905,140 @@ Cierre declarado por el usuario en Supabase (2026-10-20):
 | Política de `avistamientos` y trigger espejo | **7** | Cerrar la inserción anónima (`with check (true)`) y decidir el destino del espejo `avistamientos → reportes`; bloquea la publicación. |
 | `terrenos` vs `habitats.tipo_area` | **6** | 7 tipos contra 5; reconciliar el vocabulario en la fase de cálculo. |
 | Ids de tipo de reporte en `constants.js` | **6 y 7** | Faltan `salvaje`, `nido`, `incursion` y `comentario` en el frontend. |
-| Poda de skills de Mapbox, MapLibre y Strix | **antes de la 6** | 40 skills que no aplican (20 + 11 + 9); el riesgo está documentado en §10. |
-| `h3_index` de los reportes migrados | **5** | Se completa al migrar la escritura a `reportes`; los espejos actuales lo dejan pendiente. |
+| Poda de skills que no aplican | opcional | 8 de 12 no se usan (§10): 4 de seguridad y 4 de marketing. Ya no están versionadas, así que el coste de dejarlas es ruido al cargar skills, no tamaño del repo. |
+| `h3_index` de los reportes migrados | **5B** | Script `scripts/backfill-h3.mjs` escrito pero **no ejecutado**. Los 4 nulos son la semilla histórica de `schema.sql`, no un fallo del frontend. Se ejecutará después de respaldar `reportes`. |
+| Aplicar y verificar `0010` / cargar datos 5A | **5A** | `0010` escrita; faltan aplicar, cargar afinidad/terrenos/celdas, correr las dos pruebas SQL y confirmar Advisor. |
+| `pokemon_cercanos`, 0011 y 0012 | **5B** | No iniciados. Requieren aprobación explícita tras verificar 5A. |
 | Protección contra contraseñas filtradas en Auth | **revisar en la 7** | Activar/verificar la comprobación de contraseñas filtradas de Supabase Auth. |
+| Destrackear `.opencode/` y `skills-lock.json` | **antes de la 6** | Ya están en `.gitignore`, pero siguen versionados: `git rm -r --cached` (§7.3). Mientras no se haga, cualquier cambio en una skill entra en el próximo commit. |
 
 Reglas de entorno asociadas:
 
 - `.env` contiene la `service_role` y **debe seguir ignorado en git** (`.gitignore` ya cubre
   `.env`, `.env.local` y `*.local`). La `service_role` nunca va al frontend ni lleva prefijo
-  `VITE_`.
-- El caché de Overpass de la Fase 5 irá en una **carpeta ignorada** por git (por ejemplo
-  `scripts/.overpass-cache/`), para no versionar respuestas de terceros.
+  `VITE_`. Verificado: nunca estuvo en el historial.
+- El caché de Overpass de la Fase 5 va en `scripts/.overpass-cache/`, **ya ignorado** por
+  `.gitignore`. No hay que crear regla nueva al abrir esa fase; si el script usa otra ruta, hay
+  que añadirla.
+
+---
+
+## 15. Fase 5A — esquema aditivo y datos de terreno (escrita, pendiente de aplicar)
+
+**Estado:** `0010_fase5_esquema_datos.sql`, `scripts/lib/*`, `scripts/seed-afinidad.mjs`,
+`scripts/cargar-terrenos.mjs`, `scripts/cargar-celdas.mjs`, `scripts/backfill-h3.mjs`, las dos
+pruebas SQL, `.env.example` y `package.json` están escritos. **No se aplicó ninguna migración, no se
+cargaron datos reales y `backfill-h3.mjs` no se ejecutó.** El usuario debe aplicar y verificar antes
+de iniciar 5B.
+
+### Entregables
+
+```
+supabase/migrations/0010_fase5_esquema_datos.sql
+supabase/tests/0010_verificar_esquema_fase5a.sql
+supabase/tests/0010_verificar_datos_fase5a.sql
+scripts/seed-afinidad.mjs
+scripts/cargar-terrenos.mjs
+scripts/cargar-celdas.mjs
+scripts/backfill-h3.mjs
+scripts/data/afinidad-terreno.json
+scripts/lib/env.mjs · supabaseAdmin.mjs · geo.mjs · h3Cells.mjs
+scripts/lib/overpass.mjs · terrenos.mjs · *.test.mjs
+.env.example
+package.json  → scripts, osmtogeojson y override de @xmldom/xmldom
+```
+
+### Decisiones y porqué
+
+1. **`celdas_h3` es una tabla separada.** `celdas_habitat` mide composición por celda; `celdas_h3`
+   guarda la malla una sola vez. `h3_index` es PK, `centro` es `geography(Point,4326)` generada y
+   `geom` es `MultiPolygon`. GiST en centro y geom. La malla se genera en Node con `h3-js`; no se
+   instala H3 en Postgres.
+2. **`celdas_habitat` conserva su composición y gana FK** a `celdas_h3` con `on delete cascade`. La
+   tabla estaba vacía, así que no hizo falta backfill.
+3. **`terreno_poligonos` no tiene lectura pública.** RLS activo, cero políticas, DML solo
+   `service_role`. Evita exponer geometrías OSM crudas y deja la lectura pública a las tablas
+   agregadas.
+4. **Normalización en trigger.** `ST_MakeValid`, extracción de polígonos y simplificación. Polígonos
+   a `0.0001` (~11 m); líneas de agua a `0.00001` (~1,1 m) **antes** del buffer y sin simplificar la
+   franja. Es la excepción aprobada para no borrar quebradas estrechas.
+5. **Prioridad y remanente urbano.** `agua > cementerio > industrial > parque > bosque > cerro`;
+   `urbano = 100 − explícitos`, truncado a 2 decimales. Garantiza suma ≤ 100; sobreestima lo urbano
+   en zonas rurales sin clasificar, aceptado para esta pasada.
+6. **`cerro` sin cobertura.** OSM no da pendiente poligonal fiable. Los pesos de afinidad se cargan
+   igual; hace falta DEM/elevación en otra fase.
+7. **Bbox `-75.68,6.07,-75.32,6.48`.** Incluye parte de Rionegro y laderas orientales; no es una
+   frontera administrativa. Medición real: **16 640 celdas** y **378 tiles** de `0.02°`; el cálculo
+   previo de 399 era una estimación. Overpass: **20 bloques** de `0.1°` con margen `0.02°`.
+8. **Tiles pequeños y fallos aislados.** `cargar-celdas.mjs` usa `0.02°`; un tile fallido no aborta
+   la carga. Guarda `scripts/.overpass-cache/celdas-estado.json`; `--solo-fallidos` o
+   `--desde-tile=N` permiten relanzar. El upsert de `celdas_h3` y el recálculo son idempotentes.
+9. **`--max-tiles=N` imprime el tiempo por tile.** Se añadió para medir uno antes de los 378.
+10. **`--vaciar-terrenos` es destructivo y opcional.** No está en `datos:todo` ni se recomienda en
+    esta pasada. Solo trunca si la corrida fue completa, sin fallidos y con cobertura > 0.
+11. **Afinidad completa de 126 pares.** El JSON fuente solo lista pesos > 0; el script expande los
+    ausentes a 0, valida 7×18, rechaza negativos y hace upsert por `(terreno,pokemon_tipo)`. El
+    usuario debe ver el JSON (`--dry-run --json`) antes de la carga real.
+12. **Overpass con User-Agent identificable, caché, backoff y pausa.** Consultas secuenciales;
+    reintentos 5/15/45 s y endpoint alternativo. Caché crudo en `scripts/.overpass-cache/`.
+13. **`osmtogeojson` exacto `3.0.0-beta.5` + override `@xmldom/xmldom@0.8.15`.** Beta sin
+    mantenimiento; solo se procesa JSON de Overpass (no XML). `npm audit` en 0.
+14. **`fn_recalcular_celdas_habitat` es `SECURITY INVOKER`**, `search_path = public, extensions`,
+    `EXECUTE` solo `service_role`. Trabaja por tiles, borra/reinserta composición y valida que la
+    suma no supere 100. La llama el script con service_role.
+15. **`fn_vaciar_terreno_poligonos` es `SECURITY DEFINER`**, `search_path = public`, `EXECUTE` solo
+    `service_role`. Es la única función definer nueva; se usa solo tras recálculo y cobertura > 0.
+16. **Timeout de API verificado en documentación.** Las llamadas del cliente tienen máximo
+    configurable de **60 s**; `service_role` **no tiene timeout propio y hereda los 8 s de
+    `authenticator` si no se configura**. Por eso el tile debe medirse con `--max-tiles=1`; `0010` no
+    cambia timeouts globales. Para más de 60 s haría falta conexión directa/Supavisor, no PostgREST.
+17. **Los 4 `h3_index` nulos son históricos.** Son la semilla de `supabase/schema.sql` copiada por
+    `0007` y el trigger espejo, **no un fallo del frontend** (`useAvistamientos.js` calcula H3 al
+    insertar). `backfill-h3.mjs` está escrito y se ejecutará en 5B tras respaldar `reportes`.
+
+18. **Ajustes de robustez tras revisión estática.** `fn_normalizar` rescata la parte poligonal de
+    un `GeometryCollection` que devuelve `ST_MakeValid` en polígonos OSM inválidos y pone
+    `ancho_m = null` en polígonos. `--json` de afinidad deja stdout como JSON puro (el aviso de
+    dry-run va a stderr). Las fixtures SQL usan `osm_id` negativos para no colisionar con OSM real.
+    `parseBbox` rechaza partes vacías.
+
+### Medido en seco (sin cargas reales)
+
+| Prueba | Resultado |
+|---|---|
+| `npm run test:scripts` | **16/16 ok** |
+| `seed:afinidad --dry-run` | **126 pares**, 41 con peso > 0 |
+| `datos:terrenos --dry-run --bbox=-75.60,6.19,-75.55,6.25` | 1 bloque Overpass |
+| `datos:celdas --dry-run --bbox=-75.60,6.19,-75.55,6.25 --max-tiles=1` | 337 celdas, 9 tiles, 1 seleccionado, ~843 filas estimadas |
+| `datos:celdas --dry-run` | 16 640 celdas, 378 tiles, ~41 600 filas estimadas |
+| `npm audit` | 0 vulnerabilidades |
+| `npm run build` | correcto (Vite 6.4.4; solo aviso de chunk > 500 kB) |
+| Rutina de tokens de §11 | `.glass-panel`, `.field`, `.focus-ring`, `.pressable`, `.bg-primary`, `.text-ink` presentes |
+
+### Pendiente al cerrar 5A
+
+1. Aplicar `0010` y confirmar Advisor.
+2. Revisar/aprobar el JSON de 126 afinidades; después cargar.
+3. Correr primero el bbox de prueba y medir un tile; luego el bbox completo.
+4. Ejecutar las dos pruebas SQL y corregir lo que falle antes de 5B.
+5. No ejecutar `backfill-h3.mjs` hasta 5B, tras respaldar `reportes`.
+6. No iniciar `0011`, `0012` ni `pokemon_cercanos` sin aprobación explícita.
+
+### Endurecimiento del cliente Overpass y diagnóstico real (2026-10-23)
+
+- **Causa real confirmada:** saturación de `overpass-api.de` (HTTP 502 con mensaje *"This Overpass API server is currently at capacity. All query workers are busy and the request queue is full"*) y el endpoint de respaldo `overpass.kumi.systems` ya no existe (`getaddrinfo ENOTFOUND`; la wiki de OSM indica que migró a `overpass.private.coffee`).
+- **Hipótesis descartadas:** problemas del transporte HTTP de Node (`fetch`/Undici), DNS local, TLS o rechazo del `User-Agent`. Una consulta real desde PowerShell sobre el bbox de prueba respondió HTTP 200 en 32 s (~90 kB). Además, `scripts/diagnostico-overpass.mjs` usaba la consulta inválida `node(50.75,7.11)`, cuyo timeout no aportaba información, y una sesión previa había dejado cambios en dos archivos huérfanos con comilla invertida (`cargar-terrenos.mjs\`` y `terrenos.mjs\``), ya eliminados tras incorporar lo útil y pasar las pruebas.
+- **Qué se cambió:**
+  1. **Endpoints:** se eliminó `overpass.kumi.systems`. Lista por defecto según la wiki de OSM: `overpass-api.de`, `overpass.private.coffee` y `maps.mail.ru/osm/tools/overpass`. Si `OVERPASS_URL` está en `.env` (admite varias URL separadas por coma), reemplaza la lista. Se rota solo cuando un intento falla y se conserva el último endpoint exitoso.
+  2. **Reintentos y `/api/status`:** antes de cada petición se consulta `<base>/api/status` (si no hay cupo espera lo indicado o 30 s; si responde HTTP 429/502/503/504 salta al respaldo sin desperdiciar el POST; si falla por 404 o red no bloquea). Reintentos (mínimo 6) para HTTP 429/502/503/504, errores de red, timeouts y respuestas HTTP 200 con `remark` de runtime error. Respeta `Retry-After` (segundos o fecha HTTP); si no viene, aplica espera exponencial `30 s → 60 → 120 → 240 → 300 s` (tope 5 min). Una sola petición en vuelo y preferencia DNS `ipv4first`.
+  3. **Timeouts y diagnóstico de errores:** `AbortSignal.timeout(150_000)` y `[timeout:120]` en Overpass QL (el diagnóstico usa 5 s para `/api/status` y 30 s para la consulta de prueba). Los errores incluyen estado HTTP, `error.cause` (código y mensaje) y los primeros 200 caracteres del cuerpo. `User-Agent` solo ASCII (`geoportal-pokemon-go/0.2 ...`). Manejadores globales (`unhandledRejection`, `uncaughtException`, `SIGINT`, `exit`) en `scripts/lib/procesoSeguro.mjs` para que ningún proceso termine en silencio.
+  4. **Consultas por terreno y caché reanudable:** 5 peticiones por bloque (`agua`, `cementerio`, `industrial`, `parque`, `bosque`) con pausa de 10 s entre peticiones reales de red. Caché atómico por `(bloque, terreno)` en `scripts/.overpass-cache/terrenos/` sin tocar `scripts/.overpass-cache/celdas-estado.json`. Las respuestas con error nunca se cachean. Si una petición falla y otras llegan, se guarda en `terreno_poligonos` lo recibido, se listan los `(bloque, terreno)` faltantes y al relanzar se reanuda sin repetir lo cacheado.
+  5. **Modo `--archivo=ruta.json` (repetible) y `--dry-run`:** valida estructura de JSON crudo de Overpass (`elements`, tipos `node|way|relation`, rechaza GeoJSON y `remark` de error) e imprime cuántos elementos y de qué terrenos hay antes de escribir. `--dry-run` calcula bloques × terrenos, elementos ya en caché, pausa total y tiempo máximo estimado (60 s/petición) sin tocar red ni base. `scripts/diagnostico-overpass.mjs` comparte el cliente, verifica DNS, `/api/status` y ejecuta `[out:json][timeout:25];node(6.2,-75.58,6.21,-75.57);out count;`.
+  6. **Aislamiento de fallos en Postgres y pruebas:** `escribirFilas` hace upsert por lotes y, si un lote falla, reintenta fila por fila reportando código, mensaje, `details` de Postgres y el `osm_tipo/osm_id` causante sin abortar el resto. `npm run test:scripts` ampliado a **35/35 pruebas** en seco (`overpass.test.mjs` y `cargaTerrenos.test.mjs`).
+- **Estado actual en base y riesgo registrado:**
+  - `terreno_poligonos` sigue con **0 filas**.
+  - Las **337 celdas de prueba** en `celdas_habitat` están en **100 % urbano** porque se calcularon cuando `terreno_poligonos` estaba vacía; hay que repetir `datos:celdas` sobre la zona de prueba después de cargar los terrenos.
+  - **Riesgo nuevo (primer `INSERT` real en `terreno_poligonos`):** el trigger `fn_normalizar_terreno_poligono` y los permisos de `service_role` aún no se han probado con datos reales de OSM; si algún elemento falla, el nuevo flujo fila por fila mostrará el motivo completo de Postgres y el elemento OSM exacto sin abortar los demás.
+- **Qué sigue pendiente:** ejecutar la carga real de terrenos (empezando por la zona de prueba), recalcular las celdas con polígonos cargados (`datos:celdas`) y calibrar umbrales/pesos antes de pasar al bbox completo y a la Fase 5B.
+
+

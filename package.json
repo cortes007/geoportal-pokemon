@@ -8,7 +8,13 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "seed:catalogo": "node scripts/seed-catalogo.mjs"
+    "seed:catalogo": "node scripts/seed-catalogo.mjs",
+    "seed:afinidad": "node scripts/seed-afinidad.mjs",
+    "datos:terrenos": "node scripts/cargar-terrenos.mjs",
+    "datos:celdas": "node scripts/cargar-celdas.mjs",
+    "datos:h3": "node scripts/backfill-h3.mjs",
+    "datos:todo": "node scripts/seed-afinidad.mjs && node scripts/cargar-terrenos.mjs && node scripts/cargar-celdas.mjs",
+    "test:scripts": "node --test scripts/lib/geo.test.mjs scripts/lib/h3Cells.test.mjs scripts/lib/terrenos.test.mjs scripts/lib/overpass.test.mjs scripts/lib/cargaTerrenos.test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
@@ -22,7 +28,11 @@
   "devDependencies": {
     "@tailwindcss/vite": "^4.0.0",
     "@vitejs/plugin-react": "^4.3.4",
+    "osmtogeojson": "3.0.0-beta.5",
     "tailwindcss": "^4.0.0",
     "vite": "^6.0.7"
+  },
+  "overrides": {
+    "@xmldom/xmldom": "0.8.15"
   }
 }

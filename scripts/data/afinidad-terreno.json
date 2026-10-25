@@ -1,0 +1,88 @@
+{
+  "terrenos": [
+    "agua",
+    "parque",
+    "bosque",
+    "urbano",
+    "industrial",
+    "cerro",
+    "cementerio"
+  ],
+  "tipos": [
+    "agua",
+    "fuego",
+    "planta",
+    "electrico",
+    "normal",
+    "veneno",
+    "psiquico",
+    "roca",
+    "tierra",
+    "volador",
+    "hielo",
+    "dragon",
+    "fantasma",
+    "lucha",
+    "siniestro",
+    "acero",
+    "hada",
+    "bicho"
+  ],
+  "pesos": {
+    "agua": {
+      "agua": 3.0,
+      "volador": 1.5,
+      "bicho": 1.0,
+      "hielo": 0.5
+    },
+    "parque": {
+      "planta": 2.5,
+      "bicho": 2.0,
+      "normal": 1.5,
+      "hada": 0.5,
+      "volador": 0.5
+    },
+    "bosque": {
+      "planta": 3.0,
+      "bicho": 2.5,
+      "normal": 1.0,
+      "veneno": 0.5,
+      "fantasma": 0.5,
+      "siniestro": 0.5,
+      "hada": 0.5
+    },
+    "urbano": {
+      "normal": 3.0,
+      "electrico": 2.0,
+      "lucha": 1.5,
+      "veneno": 1.5,
+      "psiquico": 0.5,
+      "acero": 0.5,
+      "siniestro": 0.5
+    },
+    "industrial": {
+      "acero": 3.0,
+      "electrico": 2.5,
+      "veneno": 2.0,
+      "roca": 1.5,
+      "fuego": 0.5,
+      "tierra": 0.5,
+      "normal": 0.5
+    },
+    "cerro": {
+      "roca": 3.0,
+      "tierra": 2.5,
+      "lucha": 1.5,
+      "volador": 0.5,
+      "dragon": 0.5,
+      "fuego": 0.5
+    },
+    "cementerio": {
+      "fantasma": 3.0,
+      "siniestro": 2.5,
+      "veneno": 0.5,
+      "psiquico": 0.5,
+      "hada": 0.5
+    }
+  }
+}
